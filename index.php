@@ -1,3 +1,5 @@
+<?php include('app/includes/head.php'); ?>
+
 <?php
 session_start();
 
@@ -20,6 +22,7 @@ function displayMessage() {
             case 6: return "<p class='success'>Déconnexion réussie !</p>";
             case 7: return "<p class='success'>Créature ajoutée au bestiaire !</p>";
             case 8: return "<p class='success'>Sort ajouté au codex !</p>";
+            case 9: return "<p class='success'>Créature suprimée !</p>";
         }
     }
     return "";
@@ -40,7 +43,6 @@ $sortRequest = $bdd->query('
 ')->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
-<?php include('app/includes/head.php'); ?>
 
 <body>
     <nav>
@@ -68,12 +70,18 @@ $sortRequest = $bdd->query('
                     <?php foreach ($bestiaireRequest as $creature): ?>
                         <li class="creature">
                             <?php if ($creature['image_path']): ?>
-                                <img src="uploads/<?php echo htmlspecialchars($creature['image_path']); ?>" alt="<?php echo htmlspecialchars($creature['nom']); ?>" style="max-width: 150px;">
+                                <img src="uploads/bestiaire/<?php echo htmlspecialchars($creature['image_path']); ?>" alt="<?php echo htmlspecialchars($creature['nom']); ?>" style="max-width: 150px;">
                             <?php else: ?>
                                 <img src="uploads/noimage.png" alt="Image par défaut" style="max-width: 150px;">
                             <?php endif; ?>
                             <strong><?php echo htmlspecialchars($creature['nom']); ?></strong> - <?php echo htmlspecialchars($creature['type']); ?>
                             <p><?php echo htmlspecialchars($creature['description']); ?></p>
+                            <p><a href="app/action/change_bestiaire.php">Modifier</a></p>
+                            <form action="app/action/delete_bestiaire.php" method="get">
+                                <input type="hidden" name="id" value="1">
+                                <button type="submit">Supprimer</button>
+                            </form>
+
                         </li>
                     <?php endforeach; ?>
                 </ul>
@@ -88,12 +96,14 @@ $sortRequest = $bdd->query('
                 <ul>
                     <?php foreach ($sortRequest as $sortilege): ?>
                         <li>
-                            <?php if (file_exists($sortilege['image_path'])): ?>
-                                <img src="uploads/<?php echo htmlspecialchars($sortilege['image_path']); ?>" alt="<?php echo htmlspecialchars($sortilege['nom']); ?>" style="max-width: 150px;">
+                            <?php if ($sortilege['image_path']): ?>
+                                <img src="uploads/sort/<?php echo htmlspecialchars($sortilege['image_path']); ?>" alt="<?php echo htmlspecialchars($sortilege['nom']); ?>" style="max-width: 150px;">
                             <?php else: ?>
                                 <img src="uploads/noimage.png" alt="Image par défaut" style="max-width: 150px;">
                             <?php endif; ?>
                             <strong><?php echo htmlspecialchars($sortilege['nom']); ?></strong> - <?php echo htmlspecialchars($sortilege['element']); ?>
+                            <p><a href="app/action/change_sort.php">Modifier</a></p>
+                            <p><a href="app/action/delete_sort.php?id=1">Suprimer</a></p>
                         </li>
                     <?php endforeach; ?>
                 </ul>
@@ -103,8 +113,8 @@ $sortRequest = $bdd->query('
         </section>
 
         <?php if (isset($_SESSION['userid'])): ?>
-            <p><a href="/projet_academie/app/actions/add_bestiaire.php">Ajouter une créature au bestiaire</a></p>
-            <p><a href="/projet_academie/app/actions/add_sort.php">Ajouter un sort au codex</a></p>
+            <p><a href="/projet_academie/app/action/add_bestiaire.php">Ajouter une créature au bestiaire</a></p>
+            <p><a href="/projet_academie/app/action/add_sort.php">Ajouter un sort au codex</a></p>
         <?php else: ?>
             <p><a href="/projet_academie/app/auth/login.php">Connectez-vous</a> pour ajouter des contenus.</p>
         <?php endif; ?>

@@ -24,7 +24,7 @@ if (isset($_POST['nom'], $_POST['description'], $_POST['type_id'])) {
 
         if (in_array($imageExt, $authorizedExt)) {
             $img = time() . rand(1, 1000) . "." . $imageExt;
-            $uploadPath = "../../uploads/" . $img;
+            $uploadPath = "../../uploads/bestiaire/" . $img;
 
             if (!move_uploaded_file($_FILES['image']['tmp_name'], $uploadPath)) {
                 die('Erreur lors de l\'upload de l\'image.');

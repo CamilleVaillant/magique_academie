@@ -28,7 +28,7 @@ if (isset($_POST['nom'], $_POST['id_element'])) {
         if (in_array($imageExt, $authorizedExt)) {
             // Générer un nom unique pour l'image
             $img = time() . rand(1, 1000) . "." . $imageExt;
-            $uploadPath = "../../uploads/" . $img;
+            $uploadPath = "../../uploads/sort/" . $img;
 
             // Déplacer l'image dans le dossier uploads
             if (!move_uploaded_file($_FILES['image']['tmp_name'], $uploadPath)) {
