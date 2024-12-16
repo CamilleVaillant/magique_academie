@@ -25,26 +25,30 @@ function displayMessage() {
     return "";
 }
 
-// Récupération du bestiaire et des sorts depuis la base de données
-$bestiaire = $bdd->query('SELECT * FROM bestiaire')->fetchAll(PDO::FETCH_ASSOC);
-$sort = $bdd->query('SELECT * FROM sort')->fetchAll(PDO::FETCH_ASSOC);
+// Récupération des créatures du bestiaire
+$bestiaireRequest = $bdd->query(
+    'SELECT bestiaire.*, type.type AS type 
+     FROM bestiaire
+     LEFT JOIN type ON bestiaire.id_type = type.id'
+)->fetchAll(PDO::FETCH_ASSOC);
+
+// Récupération des sorts
+$sortRequest = $bdd->query('
+    SELECT sort.*, element.element AS element
+    FROM sort
+    LEFT JOIN element ON sort.id_element = element.id
+')->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="/projet_academie/assets/css/style.css">
-    <title>Magique Académie</title>
-</head>
+<?php include('app/includes/head.php'); ?>
+
 <body>
     <nav>
         <ul>
             <li><a href="/projet_academie/index.php">Accueil</a></li>
             <?php if (isset($_SESSION['userid'])): ?>
-                <li><a href="/projet_academie/app/actions/add_bestiaire.php">Ajouter au Bestiaire</a></li>
-                <li><a href="/projet_academie/app/actions/add_sort.php">Ajouter un Sort</a></li>
+                <li><a href="/projet_academie/app/action/add_bestiaire.php">Ajouter au Bestiaire</a></li>
+                <li><a href="/projet_academie/app/action/add_sort.php">Ajouter un Sort</a></li>
                 <li><a href="/projet_academie/app/auth/logout.php">Se déconnecter</a></li>
             <?php else: ?>
                 <li><a href="/projet_academie/app/auth/login.php">Se connecter</a></li>
@@ -57,33 +61,39 @@ $sort = $bdd->query('SELECT * FROM sort')->fetchAll(PDO::FETCH_ASSOC);
         <h1>Bienvenue à la Magique Académie</h1>
         <?php echo displayMessage(); ?>
 
-        <section>
+        <section class="bestiaire">
             <h2>Bestiaire</h2>
-            <?php if (count($bestiaire) > 0): ?>
+            <?php if (!empty($bestiaireRequest)): ?>
                 <ul>
-                    <?php foreach ($bestiaire as $creature): ?>
-                        <li>
-                            <img src="<?php echo htmlspecialchars($creature['image_path']); ?>" alt="<?php echo htmlspecialchars($creature['name']); ?>" style="max-width: 150px;">
-                            <strong><?php echo htmlspecialchars($creature['name']); ?></strong> - <?php echo htmlspecialchars($creature['type']); ?>
+                    <?php foreach ($bestiaireRequest as $creature): ?>
+                        <li class="creature">
+                            <?php if ($creature['image_path']): ?>
+                                <img src="uploads/<?php echo htmlspecialchars($creature['image_path']); ?>" alt="<?php echo htmlspecialchars($creature['nom']); ?>" style="max-width: 150px;">
+                            <?php else: ?>
+                                <img src="uploads/noimage.png" alt="Image par défaut" style="max-width: 150px;">
+                            <?php endif; ?>
+                            <strong><?php echo htmlspecialchars($creature['nom']); ?></strong> - <?php echo htmlspecialchars($creature['type']); ?>
                             <p><?php echo htmlspecialchars($creature['description']); ?></p>
-                            <em>Ajouté par : <?php echo htmlspecialchars($creature['creator']); ?></em>
                         </li>
                     <?php endforeach; ?>
                 </ul>
             <?php else: ?>
-                <p>Aucun élément enregistré dans le bestiaire pour le moment.</p>
+                <p>Aucune créature trouvée dans le bestiaire.</p>
             <?php endif; ?>
         </section>
 
-        <section>
+        <section class="sort">
             <h2>Codex des sorts</h2>
-            <?php if (count($sort) > 0): ?>
+            <?php if (!empty($sortRequest)): ?>
                 <ul>
-                    <?php foreach ($sort as $spell): ?>
+                    <?php foreach ($sortRequest as $sortilege): ?>
                         <li>
-                            <img src="<?php echo htmlspecialchars($spell['image_path']); ?>" alt="<?php echo htmlspecialchars($spell['name']); ?>" style="max-width: 150px;">
-                            <strong><?php echo htmlspecialchars($spell['name']); ?></strong> - <?php echo htmlspecialchars($spell['element']); ?>
-                            <em>Ajouté par : <?php echo htmlspecialchars($spell['creator']); ?></em>
+                            <?php if (file_exists($sortilege['image_path'])): ?>
+                                <img src="uploads/<?php echo htmlspecialchars($sortilege['image_path']); ?>" alt="<?php echo htmlspecialchars($sortilege['nom']); ?>" style="max-width: 150px;">
+                            <?php else: ?>
+                                <img src="uploads/noimage.png" alt="Image par défaut" style="max-width: 150px;">
+                            <?php endif; ?>
+                            <strong><?php echo htmlspecialchars($sortilege['nom']); ?></strong> - <?php echo htmlspecialchars($sortilege['element']); ?>
                         </li>
                     <?php endforeach; ?>
                 </ul>
@@ -99,5 +109,6 @@ $sort = $bdd->query('SELECT * FROM sort')->fetchAll(PDO::FETCH_ASSOC);
             <p><a href="/projet_academie/app/auth/login.php">Connectez-vous</a> pour ajouter des contenus.</p>
         <?php endif; ?>
     </div>
+
 </body>
 </html>

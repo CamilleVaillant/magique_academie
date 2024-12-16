@@ -1,65 +1,87 @@
 <?php
-session_start();
-if (!isset($_SESSION['userid'])) {
-    header('Location: /projet_academie/app/auth/login.php?error=1');
-    exit;
-}
+include('../includes/function.php');
 
-$bdd = new PDO('mysql:host=localhost;dbname=magie_academie;charset=utf8', 'root', '');
+// Récupération des types depuis la base de données
+$request = $bdd->prepare('SELECT * FROM type');
+$request->execute();
+$types = $request->fetchAll(PDO::FETCH_ASSOC);
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $name = htmlspecialchars($_POST['name']);
-    $description = htmlspecialchars($_POST['description']);
-    $type = htmlspecialchars($_POST['type']);
-    $creator = $_SESSION['userid'];
+// Vérification si le formulaire est soumis
+if (isset($_POST['nom'], $_POST['description'], $_POST['type_id'])) {
+    $nom = sanitarize($_POST['nom']);
+    $description = sanitarize($_POST['description']);
+    $type_id = intval($_POST['type_id']); // Conversion sécurisée en entier
 
-    if (empty($name) || empty($description) || empty($type) || empty($_FILES['image']['name'])) {
-        header('Location: add_bestiaire.php?error=1');
-        exit;
+    $img = null;
+
+    // Gestion de l'upload d'image
+    if (!empty($_FILES['image']['name'])) {
+        $imageName = sanitarize($_FILES['image']['name']);
+        $imageInfo = pathinfo($imageName);
+        $imageExt = strtolower($imageInfo['extension']); // Extension en minuscule
+
+        $authorizedExt = ['png', 'jpeg', 'jpg', 'webp', 'bmp', 'svg'];
+
+        if (in_array($imageExt, $authorizedExt)) {
+            $img = time() . rand(1, 1000) . "." . $imageExt;
+            $uploadPath = "../../uploads/" . $img;
+
+            if (!move_uploaded_file($_FILES['image']['tmp_name'], $uploadPath)) {
+                die('Erreur lors de l\'upload de l\'image.');
+            }
+        } else {
+            die('Extension de fichier non autorisée.');
+        }
     }
 
-    $imagePath = '/projet_academie/uploads/' . basename($_FILES['image']['name']);
-    move_uploaded_file($_FILES['image']['tmp_name'], $_SERVER['DOCUMENT_ROOT'] . $imagePath);
+    // Connexion à la base de données
+    $bdd = new PDO('mysql:host=localhost;dbname=magie_academie;charset=utf8', 'root', '');
 
-    $stmt = $bdd->prepare('INSERT INTO bestiaire (name, description, type, creator, image_path) VALUES (?, ?, ?, ?, ?)');
-    $stmt->execute([$name, $description, $type, $creator, $imagePath]);
+    // Insertion dans la base de données
+    $request = $bdd->prepare('
+        INSERT INTO bestiaire (nom, description, id_user, id_type, image_path)
+        VALUES (:nom, :description, :id_user, :id_type, :image_path)
+    ');
 
+    $request->execute([
+        'nom' => $nom,
+        'description' => $description,
+        'id_user' => $_SESSION['userid'], // Assurez-vous que l'utilisateur est connecté
+        'id_type' => $type_id,
+        'image_path' => $img,
+    ]);
+
+    // Redirection après succès
     header('Location: /projet_academie/index.php?success=7');
     exit;
 }
 ?>
 
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ajouter au Bestiaire</title>
-</head>
+<?php include('../includes/head.php'); ?>
 <body>
-    <h1>Ajouter une créature au Bestiaire</h1>
-    <?php if (isset($_GET['error'])): ?>
-        <p class="error">Tous les champs sont obligatoires.</p>
-    <?php endif; ?>
-    <form action="add_bestiaire.php" method="post" enctype="multipart/form-data">
-        <label for="name">Nom :</label>
-        <input type="text" name="name" id="name" required>
-        
-        <label for="description">Description :</label>
-        <textarea name="description" id="description" required></textarea>
-        
-        <label for="type">Type :</label>
-        <select name="type" id="type" required>
-            <option value="aquatique">Aquatique</option>
-            <option value="démoniaque">Démoniaque</option>
-            <option value="mort-vivante">Mort-vivante</option>
-            <option value="mi-bête">Mi-bête</option>
-        </select>
-        
-        <label for="image">Image :</label>
-        <input type="file" name="image" id="image" accept="image/*" required>
-        
-        <button type="submit">Ajouter</button>
-    </form>
+    <?php include('../includes/nav.php'); ?>
+    <section>
+        <form action="add_bestiaire.php" method="POST" enctype="multipart/form-data">
+            <label for="nom">Nom de la créature</label>
+            <input id="nom" type="text" name="nom" required>
+
+            <label for="description">Entrez la description</label>
+            <textarea id="description" name="description" required></textarea>
+
+            <label for="type">Sélectionner le type de la créature</label>
+            <select id="type" name="type_id" required>
+                <?php foreach ($types as $type): ?>
+                    <option value="<?php echo htmlspecialchars($type['id']); ?>">
+                        <?php echo htmlspecialchars($type['type']); ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+
+            <label for="image">Choisissez une image</label>
+            <input id="image" type="file" name="image">
+
+            <button type="submit">Ajouter</button>
+        </form>
+    </section>
 </body>
 </html>
